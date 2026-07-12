@@ -1,0 +1,57 @@
+{
+  "name": "mic-lock",
+  "version": "0.1.0",
+  "description": "Local, serverless CLI that locks shared test devices (Android emulators, iOS simulators, physical devices) across concurrent AI coding agents — fair FIFO queue, notify-on-free, and hold-until-human-approves.",
+  "keywords": [
+    "lock",
+    "mutex",
+    "emulator",
+    "simulator",
+    "adb",
+    "device",
+    "agents",
+    "worktree",
+    "bakery-algorithm",
+    "fencing-token",
+    "cli"
+  ],
+  "type": "module",
+  "license": "MIT",
+  "author": "Michael23Magedy <michaelmagdymagdy@gmail.com>",
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "mic-lock": "dist/bin/mic-lock.js",
+    "mlk": "dist/bin/mic-lock.js"
+  },
+  "files": [
+    "dist",
+    "skills",
+    "scripts/install-skill.mjs",
+    "README.md",
+    "COMPETITORS.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "watch": "tsc -p tsconfig.json --watch",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run test/unit",
+    "test:stress": "npm run build && vitest run test/stress",
+    "test:all": "npm run build && vitest run",
+    "start": "node dist/bin/mic-lock.js",
+    "install-skill": "node scripts/install-skill.mjs"
+  },
+  "dependencies": {
+    "commander": "^13.1.0",
+    "picocolors": "^1.1.1",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.1",
+    "fast-check": "^3.23.2",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.5"
+  }
+}
