@@ -50,6 +50,7 @@ export async function withAction(
         line(color.yellow(`⏳ "${resource}" busy — waiting (position #${info.position + 1})…`));
     },
   };
+  if (g.owner) acquireOpts.label = g.owner;
   if (options.timeout) acquireOpts.timeoutMs = Number(options.timeout);
   // `with` always takes a lease and heartbeats it below, so a crash (even
   // SIGKILL) frees the device once the lease expires. until-approved holds
