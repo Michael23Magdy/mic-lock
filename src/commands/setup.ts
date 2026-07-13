@@ -8,34 +8,7 @@ import { ctx, emitJson, line, color } from "./shared.js";
 import { ensureDir, rmrf, writeAtomic } from "../core/fsatomic.js";
 import { MicLockError } from "../util/errors.js";
 import { ExitCode } from "../util/exitcodes.js";
-
-const HOOK_COMMAND = "mic-lock guard";
-const RULE_MARKER = "## Shared test devices — use mic-lock";
-const RULE_BODY = `${RULE_MARKER} (enforced)
-
-This machine runs a limited number of emulators / simulators / phones shared by
-parallel agents. Before ANY device operation — \`adb install/shell/push\`,
-\`emulator\` boot, \`xcrun simctl\`, \`gradlew connected*\`/\`install*\`,
-\`xcodebuild test\`, \`flutter\`/\`react-native\`/\`expo run\` — wrap it so you
-hold the device lock:
-
-    mic-lock with <device> -- <your command>
-
-Find <device> with \`mic-lock discover\`; use the adb serial or simulator UDID
-(e.g. emulator-5554) as the lock name so every agent converges on the same lock.
-\`with\` waits its turn when busy and auto-releases when done. A PreToolUse hook
-(\`mic-lock guard\`) blocks unwrapped device commands, so this is enforced, not
-just advised.
-`;
-
-interface HookEntry {
-  matcher?: string;
-  hooks?: Array<{ type?: string; command?: string }>;
-}
-interface Settings {
-  hooks?: { PreToolUse?: HookEntry[]; [k: string]: unknown };
-  [k: string]: unknown;
-}
+import { HOOK_COMMAND, RULE_BODY, isMicLockHookCommand, type Settings } from "../core/enforcement.js";
 
 function resolveSkillSource(): string {
   const candidates = [
@@ -84,7 +57,7 @@ export function runSetup(o: RunSetupOptions): SetupResult {
   }
   const pre = settings.hooks?.PreToolUse ?? [];
   const hookPresent = pre.some((e) =>
-    (e.hooks ?? []).some((h) => (h.command ?? "").includes("mic-lock guard") || (h.command ?? "").includes("mic-lock-guard")),
+    (e.hooks ?? []).some((h) => isMicLockHookCommand(h.command ?? "")),
   );
 
   // --- CLAUDE.md ---
@@ -165,6 +138,6 @@ export async function setupAction(options: SetupCliOptions, command: Command): P
     } else {
       line(color.dim("  For a specific repo (committable, travels to teammates): mic-lock setup --project"));
     }
-    line(color.dim("  Undo: mic-lock setup is reversible — remove the PreToolUse entry + skill dir."));
+    line(color.dim("  Undo anytime: mic-lock uninstall"));
   }
 }
