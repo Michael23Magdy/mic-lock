@@ -138,7 +138,23 @@ Scope: **`--user`** (default, `~/.claude/`) covers every project on this
 machine; **`--project`** writes the repo's `.claude/` so committing it gives
 teammates and other machines the same enforcement (each machine still needs
 `npm i -g mic-lock`). Hooks load at session start, so restart agent sessions
-after running it. Undo by removing the `PreToolUse` entry and the skill dir.
+after running it.
+
+**Turning it back off** — `mic-lock uninstall` fully reverses `setup`: it removes
+the skill, the `PreToolUse` hook and the `CLAUDE.md` rule (so agents no longer see
+*or* enforce it) and purges the lock state at `~/.mic-lock`. It mirrors `setup`'s
+scope flags, preserves any unrelated settings/hooks, and is idempotent.
+
+```bash
+mic-lock uninstall              # remove from ~/.claude/ + purge locks
+mic-lock uninstall --project    # remove this repo's .claude/
+mic-lock uninstall --print      # dry run — show what it would remove
+mic-lock uninstall --keep-locks # leave ~/.mic-lock intact
+```
+
+The purge is skipped (with a warning) if another agent is currently holding or
+waiting on a lock — pass `--force` to override. Re-enable anytime with
+`mic-lock setup`.
 
 See [skills/mic-lock/SKILL.md](skills/mic-lock/SKILL.md). All commands support
 `--json` for parsing.
@@ -150,6 +166,7 @@ See [skills/mic-lock/SKILL.md](skills/mic-lock/SKILL.md). All commands support
 | Command | What it does |
 |---|---|
 | `setup [--user\|--project [dir]] [--print]` | Install & forget: skill + enforcement hook + naming rule |
+| `uninstall [--user\|--project [dir]] [--print] [--keep-locks] [--force]` | Reverse `setup`: remove skill + hook + rule, purge lock state (aliases: `disable`, `remove`, `teardown`) |
 | `guard` | PreToolUse hook (used by `setup`); blocks unwrapped device commands |
 | `acquire <res> [--wait] [--timeout <ms>] [--until-approved] [--ttl <s>]` | Take a lock; joins the FIFO queue when busy |
 | `release <res> [--token <fence>] [--force] [--reason <t>]` | Release yours, or force-release (steal) someone's |

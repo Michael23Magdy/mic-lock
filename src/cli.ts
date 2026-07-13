@@ -17,6 +17,7 @@ import {
 } from "./commands/config.js";
 import { renewAction } from "./commands/renew.js";
 import { setupAction } from "./commands/setup.js";
+import { uninstallAction } from "./commands/uninstall.js";
 import { guardAction } from "./commands/guard.js";
 import { hammerAction } from "./commands/hammer.js";
 import { MicLockError } from "./util/errors.js";
@@ -126,6 +127,16 @@ function buildProgram(): Command {
     .option("--user", "install into ~/.claude/ (all projects on this machine) [default]")
     .option("--print", "dry run: show what would change without writing")
     .action(setupAction);
+
+  common(program.command("uninstall"))
+    .aliases(["disable", "remove", "teardown"])
+    .description("Reverse `setup`: remove the skill, guard hook & rule, and purge lock state")
+    .option("--project [dir]", "uninstall from a repo's .claude/ (default: cwd)")
+    .option("--user", "uninstall from ~/.claude/ (all projects on this machine) [default]")
+    .option("--print", "dry run: show what would change without writing")
+    .option("--keep-locks", "keep the lock state at ~/.mic-lock (default: purge it)")
+    .option("--force", "purge lock state even if an agent currently holds/awaits a lock")
+    .action(uninstallAction);
 
   program
     .command("guard")
