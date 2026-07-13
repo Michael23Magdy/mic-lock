@@ -7,10 +7,17 @@ export interface DiscoveredDevice {
   name: string;
   platform: DevicePlatform;
   kind: DeviceKind;
-  /** Raw tool state, e.g. "device", "offline", "Booted", "Shutdown", "not-booted". */
+  /** Phase, e.g. "booted", "booting", "not-booted", "device", "offline", "Booted", "Shutdown". */
   state: string;
-  /** Whether the device is currently running and usable for a test. */
+  /** Whether the device is present and connected (a process exists — do NOT boot it). */
   running: boolean;
+  /** Android emulators: the AVD name (constant across boots), when known. */
+  avdName?: string;
+  /**
+   * Emulators/simulators: true once fully booted, false while still booting,
+   * undefined when not applicable (physical) or unreadable.
+   */
+  bootCompleted?: boolean;
 }
 
 export interface DiscoverResult {

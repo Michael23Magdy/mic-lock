@@ -74,7 +74,7 @@ export async function acquireAction(
       if (!options.ttl) {
         line(
           color.dim(
-            "  held until you release it (a crash won't free it — prefer `mic-lock with` for automated runs).",
+            "  held until you release it — release when done (a crash won't free it; recover a stranded hold with `release --force`).",
           ),
         );
       }

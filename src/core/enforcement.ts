@@ -15,17 +15,25 @@ export const RULE_BODY = `${RULE_MARKER} (enforced)
 
 This machine runs a limited number of emulators / simulators / phones shared by
 parallel agents. Before ANY device operation — \`adb install/shell/push\`,
-\`emulator\` boot, \`xcrun simctl\`, \`gradlew connected*\`/\`install*\`,
-\`xcodebuild test\`, \`flutter\`/\`react-native\`/\`expo run\` — wrap it so you
-hold the device lock:
+\`emulator\`/simulator boot, \`xcrun simctl\`, \`gradlew connected*\`/\`install*\`,
+\`xcodebuild test\`, \`flutter\`/\`react-native\`/\`expo run\` — you must hold
+the device lock.
 
-    mic-lock with <device> -- <your command>
+A device task is usually several commands, so take the lock ONCE and keep it:
 
-Find <device> with \`mic-lock discover\`; use the adb serial or simulator UDID
-(e.g. emulator-5554) as the lock name so every agent converges on the same lock.
-\`with\` waits its turn when busy and auto-releases when done. A PreToolUse hook
-(\`mic-lock guard\`) blocks unwrapped device commands, so this is enforced, not
-just advised.
+    mic-lock acquire <device> --owner "<short task>" --wait
+    ...your adb / gradlew / xcodebuild / simctl commands...
+    mic-lock release <device>
+
+While you hold it, those commands are allowed; release as soon as you're done.
+For a single command, wrap just it (auto-releases on exit):
+
+    mic-lock with <device> --owner "<short task>" -- <your command>
+
+Find <device> with \`mic-lock discover\` and lock the adb serial / simulator UDID
+(e.g. emulator-5554) so every agent converges on the same lock — and check its
+state there first: never reboot an emulator already shown booted/booting. A
+PreToolUse hook (\`mic-lock guard\`) enforces this.
 `;
 
 export interface HookEntry {

@@ -54,7 +54,7 @@ function buildProgram(): Command {
     .option("--ttl <sec>", "dead-man timer: auto-reclaim after N seconds if not renewed")
     .option("--capacity <n>", "if creating: number of interchangeable slots (semaphore)")
     .option("--devices <id...>", "if creating: device ids forming a pool")
-    .option("--owner <label>", "label this agent (e.g. a ticket id)")
+    .option("--owner <label>", "who holds it, for `status` (short task description; or set $MIC_LOCK_OWNER)")
     .action(acquireAction);
 
   common(program.command("release <resource>"))
@@ -80,9 +80,9 @@ function buildProgram(): Command {
     .description("Acquire, run a command while heartbeating, then auto-release (crash-safe)")
     .option("--no-wait", "fail fast instead of waiting in line")
     .option("-t, --timeout <ms>", "give up waiting after this many ms")
-    .option("--until-approved", "keep held for human approval after the command finishes")
+    .option("--until-approved", "on success, keep held for human approval instead of releasing")
     .option("--ttl <sec>", "lease seconds before a heartbeat must renew")
-    .option("--owner <label>", "label this agent (e.g. a ticket id)")
+    .option("--owner <label>", "who holds it, for `status` (short task description; or set $MIC_LOCK_OWNER)")
     .action(withAction);
 
   common(program.command("status [resource]"))

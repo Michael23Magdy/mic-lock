@@ -44,7 +44,7 @@ let pidSeq = 10_000;
 /** Build a controllable identity and mark its pid alive. */
 export function ident(
   liveness: FakeLiveness,
-  opts: { pid?: number; label?: string; startedAt?: string } = {},
+  opts: { pid?: number; label?: string; startedAt?: string; worktree?: string; branch?: string } = {},
 ): Identity {
   const pid = opts.pid ?? pidSeq++;
   const startedAt = opts.startedAt ?? `start-${pid}`;
@@ -57,6 +57,8 @@ export function ident(
     startedAt,
   };
   if (opts.label !== undefined) id.label = opts.label;
+  if (opts.worktree !== undefined) id.worktree = opts.worktree;
+  if (opts.branch !== undefined) id.branch = opts.branch;
   return id;
 }
 
