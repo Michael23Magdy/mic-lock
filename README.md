@@ -108,19 +108,40 @@ mic-lock acquire ci-slot --capacity 2 --wait
 
 ---
 
-## For AI coding agents
+## For AI coding agents — install & forget
 
-mic-lock ships a **Claude Code skill** that teaches agents when and how to lock.
-Install it once so every agent on the machine picks it up:
+One command wires everything up so parallel agents coordinate **without you
+doing anything per-run**:
 
 ```bash
-npm run install-skill      # symlinks skills/mic-lock into ~/.claude/skills/
+mic-lock setup                # this machine, all projects  (writes ~/.claude/)
+mic-lock setup --project      # this repo (committable, travels to teammates)
+mic-lock setup --print        # dry run — show what it would change
 ```
 
-The skill tells agents to wrap device work in `mic-lock with …`, to honor exit
-codes, and to use `--until-approved` + tell you to `approve` when you want to
-test by hand. All commands support `--json` for parsing. See
-[skills/mic-lock/SKILL.md](skills/mic-lock/SKILL.md).
+`setup` installs three things (idempotently):
+
+1. **The Claude Code skill** — teaches agents to wrap device work in
+   `mic-lock with …`, honor exit codes, and use `--until-approved` + `approve`
+   when you want to test by hand.
+2. **A PreToolUse hook (`mic-lock guard`)** — *enforcement*. It **blocks** any
+   Bash command that touches a shared device (`adb install/shell/push`,
+   `emulator` boot, `xcrun simctl`, `gradlew connected*`, `xcodebuild test`,
+   `flutter`/`react-native`/`expo run`) unless it's wrapped in `mic-lock`, and
+   tells the agent how to fix it. Read-only checks (`adb devices`, `simctl
+   list`) are allowed. This is deterministic — it does not depend on the model
+   choosing to comply.
+3. **A `CLAUDE.md` rule** fixing the naming convention (lock by adb serial /
+   simulator UDID) so every agent converges on the same lock name.
+
+Scope: **`--user`** (default, `~/.claude/`) covers every project on this
+machine; **`--project`** writes the repo's `.claude/` so committing it gives
+teammates and other machines the same enforcement (each machine still needs
+`npm i -g mic-lock`). Hooks load at session start, so restart agent sessions
+after running it. Undo by removing the `PreToolUse` entry and the skill dir.
+
+See [skills/mic-lock/SKILL.md](skills/mic-lock/SKILL.md). All commands support
+`--json` for parsing.
 
 ---
 
@@ -128,6 +149,8 @@ test by hand. All commands support `--json` for parsing. See
 
 | Command | What it does |
 |---|---|
+| `setup [--user\|--project [dir]] [--print]` | Install & forget: skill + enforcement hook + naming rule |
+| `guard` | PreToolUse hook (used by `setup`); blocks unwrapped device commands |
 | `acquire <res> [--wait] [--timeout <ms>] [--until-approved] [--ttl <s>]` | Take a lock; joins the FIFO queue when busy |
 | `release <res> [--token <fence>] [--force] [--reason <t>]` | Release yours, or force-release (steal) someone's |
 | `approve <res> [--slot <id>]` | Human releases an `until-approved` hold for the next agent |

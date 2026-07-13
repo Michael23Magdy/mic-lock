@@ -24,6 +24,11 @@ wait queue, so you take a device, use it, and release it cleanly.
 > simctl`, or any instrumented/UI/e2e test — hold a mic-lock on it. Release as
 > soon as you're done.
 
+This is **enforced** by a PreToolUse hook: an unwrapped `adb install`,
+`emulator` boot, `xcrun simctl`, `flutter run`, `gradlew connected*`, etc. is
+blocked until you wrap it in `mic-lock`. If you see that block message, don't
+work around it — re-run the command wrapped as shown below.
+
 ## Preferred pattern: wrap the command (crash-safe, auto-release)
 
 Put the whole device-using command inside `mic-lock with`. It acquires (waiting

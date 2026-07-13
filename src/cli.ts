@@ -16,6 +16,8 @@ import {
   configSetDefaultsAction,
 } from "./commands/config.js";
 import { renewAction } from "./commands/renew.js";
+import { setupAction } from "./commands/setup.js";
+import { guardAction } from "./commands/guard.js";
 import { hammerAction } from "./commands/hammer.js";
 import { MicLockError } from "./util/errors.js";
 import { ExitCode } from "./util/exitcodes.js";
@@ -117,6 +119,18 @@ function buildProgram(): Command {
     .option("--adb", "only probe Android (adb)")
     .option("--simctl", "only probe iOS (xcrun simctl)")
     .action(discoverAction);
+
+  common(program.command("setup"))
+    .description("Install & forget: skill + enforcement hook + device-lock rule for agents")
+    .option("--project [dir]", "install into a repo's .claude/ (committable, travels); default: cwd")
+    .option("--user", "install into ~/.claude/ (all projects on this machine) [default]")
+    .option("--print", "dry run: show what would change without writing")
+    .action(setupAction);
+
+  program
+    .command("guard")
+    .description("PreToolUse hook used by `setup`: blocks unwrapped shared-device commands")
+    .action(guardAction);
 
   const config = program.command("config").description("Inspect and edit configuration");
   common(config.command("register <name>"))
