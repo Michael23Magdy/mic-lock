@@ -17,7 +17,15 @@
   ],
   "type": "module",
   "license": "MIT",
-  "author": "Michael23Magedy <michaelmagdymagdy@gmail.com>",
+  "author": "Michael23Magdy <michaelmagdymagdy@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Michael23Magdy/mic-lock.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Michael23Magdy/mic-lock/issues"
+  },
+  "homepage": "https://github.com/Michael23Magdy/mic-lock#readme",
   "engines": {
     "node": ">=18"
   },
@@ -34,7 +42,9 @@
     "LICENSE"
   ],
   "scripts": {
+    "clean": "rm -rf dist",
     "build": "tsc -p tsconfig.json",
+    "prepublishOnly": "npm run clean && npm run build",
     "watch": "tsc -p tsconfig.json --watch",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run test/unit",
