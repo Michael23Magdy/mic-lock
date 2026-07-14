@@ -42,7 +42,11 @@ export async function discoverAction(
     d.id,
     d.name,
     `${d.platform}/${d.kind}`,
-    d.running ? color.green("running") : color.dim(d.state),
+    d.running
+      ? d.bootCompleted === false
+        ? color.yellow(d.state) // "booting" — present but not ready; do not reboot
+        : color.green(d.state) // "booted" / "device" / "Booted"
+      : color.dim(d.state), // "not-booted" / "offline" / "Shutdown"
     d.approvalPending
       ? color.cyan("approval-hold")
       : d.locked

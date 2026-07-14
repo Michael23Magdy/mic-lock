@@ -22,6 +22,9 @@ export interface CliCtx {
 /** Build the per-invocation context, merging global + local options. */
 export function ctx(command: Command): CliCtx {
   const g = command.optsWithGlobals() as GlobalOpts;
+  // Fall back to a session-wide owner label so `status` stays legible even when
+  // --owner is omitted. Precedence: --owner flag > $MIC_LOCK_OWNER > (later) git worktree.
+  if (g.owner === undefined && process.env.MIC_LOCK_OWNER) g.owner = process.env.MIC_LOCK_OWNER;
   if (g.notify === false) setNotifyDisabled(true);
   const engine = new LockEngine({ stateDir: g.stateDir ?? defaultStateDir() });
   return { g, engine };

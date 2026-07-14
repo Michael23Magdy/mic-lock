@@ -26,10 +26,15 @@ function git(args: string[], cwd: string): string | undefined {
   }
 }
 
+/** The git worktree root for a directory, if it is inside one. */
+export function resolveWorktree(cwd: string = process.cwd()): string | undefined {
+  return git(["rev-parse", "--show-toplevel"], cwd);
+}
+
 export function buildIdentity(liveness: Liveness, opts: IdentityOptions = {}): Identity {
   const cwd = opts.cwd ?? process.cwd();
   const pid = process.pid;
-  const worktree = git(["rev-parse", "--show-toplevel"], cwd);
+  const worktree = resolveWorktree(cwd);
   const branch = worktree ? git(["rev-parse", "--abbrev-ref", "HEAD"], cwd) : undefined;
   const startedAt = liveness.processStartedAt(pid);
   const id: Identity = {

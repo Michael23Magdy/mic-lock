@@ -40,55 +40,70 @@ iOS discovery uses `xcrun simctl` — both optional, the lock core needs neither
 ## Quick start
 
 ```bash
-# 1. Take a device (fails fast if busy)
-mic-lock acquire pixel7
+# 0. Find a device id every agent will agree on (adb serial / simulator UDID)
+mic-lock discover
 
-# 2. See who holds what and who's waiting
+# 1. Take it (waits its turn if busy), labelled so `status` is legible
+mic-lock acquire emulator-5554 --owner "checkout-flow test" --wait
+
+# 2. Work — install, launch, test — for as long as you hold it
+adb -s emulator-5554 install -r app.apk
+./gradlew connectedAndroidTest
+
+# 3. See who holds what and who's waiting
 mic-lock status
 
-# 3. Give it back
-mic-lock release pixel7 --token <fence>     # fence is printed on acquire
+# 4. Give it back
+mic-lock release emulator-5554
 ```
 
-The resource name (`pixel7`) is just a stable string every agent agrees on for
-that device — a nickname, an `adb` serial, or a simulator UDID. Unknown names
-are auto-created as a simple 1-slot mutex on first use.
+The resource name (`emulator-5554`) is just a stable string every agent agrees
+on for that device — use the `adb` serial or simulator UDID from `mic-lock
+discover` so everyone converges on the same lock. Unknown names are auto-created
+as a simple 1-slot mutex on first use.
 
 ### The three ways to hold a device
 
-**1. Wrap a command (recommended — crash-safe, auto-releases):**
+**1. Hold it for a task of several commands (the usual case):**
 
 ```bash
-mic-lock with pixel7 -- bash -c 'adb -s "$MIC_LOCK_DEVICE_ID" install -r app.apk && ./gradlew connectedCheck'
+mic-lock acquire emulator-5554 --owner "checkout-flow test" --wait
+adb -s emulator-5554 install -r app.apk
+# ... launch, poke, run tests — as many commands as you like ...
+mic-lock release emulator-5554
+```
+
+A manual `acquire` is **sticky** — held until you explicitly `release` it, so it
+survives across separate commands, which is exactly what a multi-step device
+task needs. When `setup`'s enforcement hook is installed, **holding the lock
+also lets your `adb`/`gradlew`/`xcodebuild` commands through** until you release.
+Nothing renews a sticky hold, so a crash won't free it automatically — release
+promptly, and recover an abandoned hold with `mic-lock status` + `mic-lock
+release <device> --force`.
+
+**2. Wrap a single command (crash-safe, auto-releases):**
+
+```bash
+mic-lock with emulator-5554 --owner "smoke test" -- \
+  bash -c 'adb -s "$MIC_LOCK_DEVICE_ID" install -r app.apk && ./gradlew connectedCheck'
 ```
 
 Acquires (waiting in line if busy), heartbeats the lease while your command
 runs, and releases on exit — even on crash or Ctrl-C. The locked device id is in
-`$MIC_LOCK_DEVICE_ID`.
-
-**2. Wait in line, then work, then release:**
-
-```bash
-mic-lock acquire pixel7 --wait --json      # blocks until granted; prints deviceId + fenceToken
-# ... run your tests ...
-mic-lock release pixel7 --token <fence>
-```
-
-A manual `acquire` is **sticky** — held until you explicitly `release` it, so it
-survives across separate commands. Nothing renews it, so a crash won't free it
-automatically: add a dead-man timer with `--ttl <sec>` (auto-reclaimed if you
-don't `mic-lock renew` it in time), or prefer `with` for automated runs.
+`$MIC_LOCK_DEVICE_ID`. Best for one self-contained step; use #1 when you'll issue
+separate commands.
 
 **3. Hold until a human approves:**
 
 ```bash
-mic-lock acquire pixel7 --until-approved   # deploy your build, then tell the human:
-#   "Ready on pixel7 — test it, then run:  mic-lock approve pixel7"
+mic-lock acquire emulator-5554 --until-approved   # deploy your build, then tell the human:
+#   "Ready on emulator-5554 — test it, then run:  mic-lock approve emulator-5554"
 ```
 
 An `--until-approved` lock never auto-releases and survives your process exiting
-(and even a reboot). Only `mic-lock approve pixel7` (or `release --force`) frees
-it — so a human can manually verify the device before the next agent takes it.
+(and even a reboot). Only `mic-lock approve emulator-5554` (or `release --force`)
+frees it — so a human can manually verify the device before the next agent takes
+it.
 
 ### Pools and semaphores
 
@@ -121,16 +136,18 @@ mic-lock setup --print        # dry run — show what it would change
 
 `setup` installs three things (idempotently):
 
-1. **The Claude Code skill** — teaches agents to wrap device work in
-   `mic-lock with …`, honor exit codes, and use `--until-approved` + `approve`
-   when you want to test by hand.
+1. **The Claude Code skill** — teaches agents to take a device once and hold it
+   for the whole task (`acquire` → work → `release`), wrap one-off commands in
+   `mic-lock with …`, label the hold with `--owner`, honor exit codes, and use
+   `--until-approved` + `approve` when you want to test by hand.
 2. **A PreToolUse hook (`mic-lock guard`)** — *enforcement*. It **blocks** any
    Bash command that touches a shared device (`adb install/shell/push`,
    `emulator` boot, `xcrun simctl`, `gradlew connected*`, `xcodebuild test`,
-   `flutter`/`react-native`/`expo run`) unless it's wrapped in `mic-lock`, and
-   tells the agent how to fix it. Read-only checks (`adb devices`, `simctl
-   list`) are allowed. This is deterministic — it does not depend on the model
-   choosing to comply.
+   `flutter`/`react-native`/`expo run`) **unless the agent's worktree already
+   holds a device lock** (so a held session runs freely) or it's wrapped in
+   `mic-lock`, and tells the agent how to fix it. Read-only checks (`adb
+   devices`, `simctl list`) are allowed. This is deterministic — it does not
+   depend on the model choosing to comply.
 3. **A `CLAUDE.md` rule** fixing the naming convention (lock by adb serial /
    simulator UDID) so every agent converges on the same lock name.
 

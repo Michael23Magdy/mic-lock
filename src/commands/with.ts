@@ -6,6 +6,7 @@ import { ResourceWatcher } from "../events/watcher.js";
 import { resourcePaths } from "../core/paths.js";
 import { readMeta, resolveTunables } from "../config/config.js";
 import { notify } from "../events/notify.js";
+import { describeOwner } from "../core/identity.js";
 import { ExitCode } from "../util/exitcodes.js";
 import type { AcquireOptions } from "../core/lock.js";
 
@@ -62,6 +63,11 @@ export async function withAction(
   const res = await engine.acquire(resource, acquireOpts);
   watcher.close();
 
+  // The legible owner label exactly as `status` shows it (label > worktree > uuid),
+  // so the wrapped command — and anything it spawns — sees who holds the device.
+  const holder = engine.getStatus(resource)?.holders.find((h) => h.fenceToken === res.fenceToken);
+  const ownerLabel = holder ? describeOwner(holder) : (g.owner ?? res.ownerUuid);
+
   if (!g.json) {
     line(color.green(`✓ acquired "${resource}"`) + (res.deviceId ? ` ${color.bold(res.deviceId)}` : ""));
     line(color.dim(`  running: ${cmdParts.join(" ")}`));
@@ -104,7 +110,7 @@ export async function withAction(
   const childEnv: NodeJS.ProcessEnv = {
     ...process.env,
     MIC_LOCK_RESOURCE: resource,
-    MIC_LOCK_OWNER: res.ownerUuid,
+    MIC_LOCK_OWNER: ownerLabel,
     MIC_LOCK_FENCE_TOKEN: String(res.fenceToken),
     MIC_LOCK_SLOT: res.slotId,
     MIC_LOCK_STATE_DIR: engine.ctx.stateDir,
@@ -136,9 +142,27 @@ export async function withAction(
       resolve();
     });
     child.on("exit", async (code, signal) => {
-      await release();
+      const exit = code ?? (signal ? 128 : 0);
+      if (mode === "until-approved" && exit === 0) {
+        // Deliberately keep the device after a successful run: the human tests
+        // the build, then frees it with `mic-lock approve`. Just stop our
+        // heartbeat and stand down (do NOT release). A failed run falls through
+        // to release below so we never strand the device on a broken build.
+        released = true;
+        clearInterval(hb);
+        if (!g.json) {
+          line(
+            color.cyan(
+              `  🔒 "${resource}" is held for you. When you've tested it, run: mic-lock approve ${resource}`,
+            ),
+          );
+        }
+        notify({ message: `"${resource}" is ready and held for your approval.` });
+      } else {
+        await release();
+      }
       if (process.exitCode === undefined || process.exitCode === 0) {
-        process.exitCode = code ?? (signal ? 128 : 0);
+        process.exitCode = exit;
       }
       resolve();
     });

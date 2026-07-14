@@ -46,35 +46,55 @@ const MOBILE_RUN: RegExp[] = [
 
 const BLOCK_MESSAGE =
   'BLOCKED by mic-lock: this touches a shared test device, and parallel agents\n' +
-  'on this machine share a limited number of them. Re-run it wrapped so you hold\n' +
-  'the device lock (it waits its turn if busy and auto-releases when done):\n\n' +
-  '  mic-lock with <device> -- <your command>\n\n' +
+  'on this machine share a limited number of them. Hold the device lock first.\n\n' +
+  'Doing several commands on the device (install, launch, test…)? Take the lock\n' +
+  'once and keep it for the whole task — your commands are then allowed until you\n' +
+  'release it:\n\n' +
+  '  mic-lock acquire <device> --owner "<short task>" --wait\n' +
+  '  ...your adb / gradlew / xcodebuild / simctl commands...\n' +
+  '  mic-lock release <device>\n\n' +
+  'Just one command? Wrap it (auto-releases when it exits, even on crash):\n\n' +
+  '  mic-lock with <device> --owner "<short task>" -- <your command>\n\n' +
   'Find <device> with `mic-lock discover` and use the adb serial / simulator UDID\n' +
-  '(e.g. emulator-5554) as the lock name so every agent converges on the same lock.\n' +
-  'Read-only checks (adb devices, simctl list, emulator -list-avds) are allowed as-is.\n';
+  '(e.g. emulator-5554) so every agent converges on the same lock. Read-only checks\n' +
+  '(adb devices, simctl list, emulator -list-avds) are allowed as-is.\n';
 
-/** Decide whether a tool call should be blocked. Only Bash is inspected. */
-export function evaluateGuard(toolName: string | undefined, command: string): GuardDecision {
+/** Extra context that lets the guard allow commands during an active lock session. */
+export interface GuardDeps {
+  /** True if the caller's worktree already holds an active device lock. */
+  hasActiveHold?: () => boolean;
+}
+
+/**
+ * Decide whether a tool call should be blocked. Only Bash is inspected.
+ *
+ * A device-driving command is blocked UNLESS the caller already holds a lock
+ * (`deps.hasActiveHold`) — so an agent that took the device once can run many
+ * commands against it without re-wrapping each one.
+ */
+export function evaluateGuard(
+  toolName: string | undefined,
+  command: string,
+  deps?: GuardDeps,
+): GuardDecision {
   if (toolName !== "Bash") return { block: false };
   const cmd = command ?? "";
   if (cmd.trim() === "") return { block: false };
   if (WRAPPED.test(cmd)) return { block: false };
 
-  // Device-driving build/run tools.
-  if (MOBILE_RUN.some((re) => re.test(cmd))) return blocked();
+  const wouldBlock =
+    // Device-driving build/run tools.
+    MOBILE_RUN.some((re) => re.test(cmd)) ||
+    // Raw simctl / adb / emulator, unless a read-only subcommand or flag.
+    (SIMCTL.test(cmd) && !SIMCTL_READONLY.test(cmd)) ||
+    (ADB.test(cmd) && !ADB_READONLY.test(cmd)) ||
+    (EMULATOR.test(cmd) && !EMULATOR_READONLY.test(cmd));
 
-  // Raw simctl: block unless it's a read-only subcommand.
-  if (SIMCTL.test(cmd) && !SIMCTL_READONLY.test(cmd)) return blocked();
+  if (!wouldBlock) return { block: false };
 
-  // Raw adb: block unless it's a read-only subcommand.
-  if (ADB.test(cmd) && !ADB_READONLY.test(cmd)) return blocked();
+  // Would block — but if this worktree already holds the device, it is in a
+  // coordinated session and may drive the device freely until it releases.
+  if (deps?.hasActiveHold?.()) return { block: false };
 
-  // Raw emulator: block unless it's a read-only flag (e.g. -list-avds).
-  if (EMULATOR.test(cmd) && !EMULATOR_READONLY.test(cmd)) return blocked();
-
-  return { block: false };
-}
-
-function blocked(): GuardDecision {
   return { block: true, reason: BLOCK_MESSAGE };
 }
