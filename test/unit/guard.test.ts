@@ -35,12 +35,29 @@ describe("guard: blocks unwrapped device commands", () => {
     block("xcodebuild test -destination 'id=ABC'");
     block("maestro test flow.yaml");
   });
+  it("blocks when mic-lock/mlk is a bare substring, not a real invocation (#3)", () => {
+    block("adb -s emulator-5554 install mlk.apk");
+    block("adb install mlk.apk");
+    block("adb -s emulator-5554 install /artifacts/mic-lock-build/app.apk");
+    block("adb install app.apk # mlk");
+    block("adb install app.apk # mic-lock");
+    block("cd mlk && adb install app.apk");
+  });
 });
 
 describe("guard: allows safe / coordinated commands", () => {
   it("allows anything wrapped in mic-lock", () => {
     allow("mic-lock with emulator-5554 -- adb install app.apk");
     allow("mlk with pixel7 -- flutter run");
+  });
+  it("allows real mic-lock/mlk invocations in various command shapes", () => {
+    allow('mlk acquire emulator-5554 --owner "task" --wait');
+    allow('mic-lock acquire emulator-5554 --owner "x"');
+    allow("mlk release emulator-5554");
+    allow("FOO=bar mlk with emulator-5554 -- adb install app.apk");
+    allow("./node_modules/.bin/mic-lock with emulator-5554 -- adb install app.apk");
+    allow("adb devices && mlk with emulator-5554 -- adb install app.apk");
+    allow("(mlk with emulator-5554 -- adb install app.apk)");
   });
   it("allows read-only device queries", () => {
     allow("adb devices");

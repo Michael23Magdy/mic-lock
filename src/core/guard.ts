@@ -15,8 +15,8 @@ export interface GuardDecision {
   reason?: string;
 }
 
-/** Already coordinated through mic-lock/mlk anywhere in the command → allow. */
-const WRAPPED = /\b(mic-lock|mlk)\b/;
+/** A real mic-lock/mlk invocation (command position, not a mere substring) → allow. */
+const WRAPPED = /(?:^|[\n;&|(]|&&|\|\|)\s*(?:sudo\s+)?(?:\w+=\S+\s+)*(?:\S*\/)?(?:mic-lock|mlk)(?:\s|$)/;
 
 /** `adb` invoked as a command (line start / after a separator, optional env/sudo/path). */
 const ADB = /(?:^|[\n;&|]|&&|\|\|)\s*(?:sudo\s+)?(?:\w+=\S+\s+)*(?:\S*\/)?adb(?:\s|$)/;
