@@ -1,7 +1,10 @@
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { evaluateGuard } from "../core/guard.js";
 import { LockEngine } from "../core/lock.js";
 import { defaultStateDir } from "../core/paths.js";
 import { resolveWorktree } from "../core/identity.js";
+import { RULE_MARKER, isMicLockHookCommand, type Settings } from "../core/enforcement.js";
 
 /** True if `worktree` currently holds any live, non-stale device lock. */
 export function worktreeHasActiveHold(engine: LockEngine, worktree: string | undefined): boolean {
@@ -28,6 +31,36 @@ function currentWorktreeHoldsLock(cwd: string | undefined): boolean {
   }
 }
 
+export function enforceScoped(env: NodeJS.ProcessEnv = process.env): boolean {
+  const v = (env.MIC_LOCK_ENFORCE ?? "").toLowerCase();
+  return v === "scoped" || v === "marker" || v === "project";
+}
+
+/** True if this project committed a mic-lock marker (i.e. ran `setup --project`). */
+export function projectHasMicLockMarker(projectDir: string): boolean {
+  const claude = join(projectDir, ".claude");
+  if (existsSync(join(claude, "skills", "mic-lock", "SKILL.md"))) return true;
+  try {
+    if (readFileSync(join(claude, "CLAUDE.md"), "utf8").includes(RULE_MARKER)) return true;
+  } catch { /* absent/unreadable */ }
+  try {
+    const s = JSON.parse(readFileSync(join(claude, "settings.json"), "utf8")) as Settings;
+    if ((s.hooks?.PreToolUse ?? []).some((e) => (e.hooks ?? []).some((h) => isMicLockHookCommand(h.command ?? "")))) return true;
+  } catch { /* absent/malformed */ }
+  return false;
+}
+
+/**
+ * Fail-safe participation check for scoped enforcement: any error is treated as
+ * "participating" so the guard keeps enforcing rather than silently opening.
+ */
+function currentProjectParticipates(cwd: string | undefined): boolean {
+  try {
+    const root = resolveWorktree(cwd ?? process.cwd()) ?? cwd ?? process.cwd();
+    return projectHasMicLockMarker(root);
+  } catch { return true; }
+}
+
 /**
  * `mic-lock guard` — a Claude Code PreToolUse hook. Reads the hook JSON on
  * stdin; exits 0 to allow, 2 to block (stderr is surfaced to the agent).
@@ -37,7 +70,8 @@ export async function guardAction(): Promise<void> {
   if (process.stdin.isTTY) {
     process.stdout.write(
       "mic-lock guard: a PreToolUse hook. It reads hook JSON on stdin and exits\n" +
-        "0 (allow) or 2 (block). Install it with `mic-lock setup`.\n",
+        "0 (allow) or 2 (block). Install it with `mic-lock setup`.\n" +
+        "Set MIC_LOCK_ENFORCE=scoped to enforce only in repos that ran `setup --project`.\n",
     );
     return;
   }
@@ -53,6 +87,9 @@ export async function guardAction(): Promise<void> {
     hasActiveHold: () => currentWorktreeHoldsLock(data.cwd),
   });
   if (decision.block) {
+    if (enforceScoped() && !currentProjectParticipates(data.cwd)) {
+      process.exit(0);
+    }
     process.stderr.write(decision.reason ?? "blocked by mic-lock");
     process.exit(2);
   }
