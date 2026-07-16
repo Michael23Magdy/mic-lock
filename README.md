@@ -151,11 +151,14 @@ mic-lock setup --print        # dry run — show what it would change
 3. **A `CLAUDE.md` rule** fixing the naming convention (lock by adb serial /
    simulator UDID) so every agent converges on the same lock name.
 
-Scope: **`--user`** (default, `~/.claude/`) covers every project on this
-machine; **`--project`** writes the repo's `.claude/` so committing it gives
+Scope — pick deliberately. **`--user`** (`~/.claude/`) is the CLI default, but it
+enforces the guard on **every project on this machine**, including repos that
+never ran mic-lock setup: their unwrapped device commands are blocked until
+wrapped in `mic-lock`. Prefer **`--project`** (recommended): it writes the repo's
+`.claude/` so enforcement stays scoped to just that repo, and committing it gives
 teammates and other machines the same enforcement (each machine still needs
-mic-lock installed from source — see [Install](#install)). Hooks load at session start, so restart agent sessions
-after running it.
+mic-lock installed from source — see [Install](#install)). Hooks load at session
+start, so restart agent sessions after running it.
 
 **Turning it back off** — `mic-lock uninstall` reverses `setup`: it removes
 the skill, the `PreToolUse` hook and the `CLAUDE.md` rule (so agents no longer see

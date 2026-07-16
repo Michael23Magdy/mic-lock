@@ -136,7 +136,11 @@ export async function setupAction(options: SetupCliOptions, command: Command): P
       line(color.dim("  Commit the .claude/ dir so teammates & other machines get it too."));
       line(color.dim("  (Each machine still needs mic-lock on its PATH — install from source: see the README \"Install\" section.)"));
     } else {
-      line(color.dim("  For a specific repo (committable, travels to teammates): mic-lock setup --project"));
+      line(color.yellow("  ⚠ User scope enforces on EVERY project on this machine — including"));
+      line(color.yellow("    repos that never ran mic-lock setup. Unwrapped device commands (adb,"));
+      line(color.yellow("    gradlew connected*, xcrun simctl, flutter/expo/react-native run,"));
+      line(color.yellow("    xcodebuild test) get blocked there until wrapped in `mic-lock`."));
+      line(color.dim("    Enforce only this repo instead (recommended): mic-lock setup --project"));
     }
     line(color.dim("  Undo anytime: mic-lock uninstall"));
   }
