@@ -154,7 +154,7 @@ mic-lock setup --print        # dry run — show what it would change
 Scope: **`--user`** (default, `~/.claude/`) covers every project on this
 machine; **`--project`** writes the repo's `.claude/` so committing it gives
 teammates and other machines the same enforcement (each machine still needs
-`npm i -g mic-lock`). Hooks load at session start, so restart agent sessions
+mic-lock installed from source — see [Install](#install)). Hooks load at session start, so restart agent sessions
 after running it.
 
 **Turning it back off** — `mic-lock uninstall` reverses `setup`: it removes

@@ -134,7 +134,7 @@ export async function setupAction(options: SetupCliOptions, command: Command): P
     line(color.bold("  Enforcement is live. Restart agent sessions so the hook loads."));
     if (options.project !== undefined) {
       line(color.dim("  Commit the .claude/ dir so teammates & other machines get it too."));
-      line(color.dim("  (Each machine still needs: npm i -g mic-lock)"));
+      line(color.dim("  (Each machine still needs mic-lock on its PATH — install from source: see the README \"Install\" section.)"));
     } else {
       line(color.dim("  For a specific repo (committable, travels to teammates): mic-lock setup --project"));
     }
