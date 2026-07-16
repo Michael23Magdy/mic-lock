@@ -241,6 +241,9 @@ export async function uninstallAction(options: UninstallCliOptions, command: Com
   if (!dryRun) {
     line("");
     line(color.bold("  Enforcement removed. Restart agent sessions so the hook unloads."));
+    line(color.dim("  The mic-lock CLI is still on your PATH — this only reverses `setup`."));
+    line(color.dim("  Remove it too with: npm rm -g mic-lock  (npm unlink if you used npm link)."));
+    line(color.dim("  A symlink you created by hand isn't tracked here — delete it yourself."));
     line(color.dim("  Re-enable anytime: mic-lock setup"));
   }
 }

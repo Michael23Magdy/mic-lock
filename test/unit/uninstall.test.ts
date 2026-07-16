@@ -1,9 +1,10 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { existsSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import type { Command } from "commander";
 import { runSetup } from "../../src/commands/setup.js";
-import { runUninstall, purgeLockState } from "../../src/commands/uninstall.js";
+import { runUninstall, purgeLockState, uninstallAction } from "../../src/commands/uninstall.js";
 import { LockEngine } from "../../src/core/lock.js";
 import { FakeClock } from "../../src/util/time.js";
 import { FakeLiveness, ident, tempStateDir } from "../helpers.js";
@@ -141,5 +142,50 @@ describe("mic-lock uninstall — lock-state purge", () => {
     const r = purgeLockState(engine, { dryRun: true });
     expect(r.locks).toBe("would-purge");
     expect(existsSync(dir)).toBe(true);
+  });
+});
+
+describe("mic-lock uninstall — closing message", () => {
+  let dir: string;
+  let cleanup: () => void;
+  beforeEach(() => {
+    ({ dir, cleanup } = tempStateDir());
+  });
+  afterEach(() => cleanup());
+
+  // A minimal Command stand-in: ctx() only ever calls optsWithGlobals().
+  // Point stateDir at the temp dir so nothing touches real ~/.mic-lock.
+  const fakeCommand = (stateDir: string): Command =>
+    ({ optsWithGlobals: () => ({ stateDir }) }) as unknown as Command;
+
+  // Run uninstallAction against a temp --project dir (its .claude is absent, so
+  // nothing is written), capturing everything printed to stdout.
+  async function runAndCapture(print: boolean): Promise<string> {
+    const chunks: string[] = [];
+    const spy = vi.spyOn(process.stdout, "write").mockImplementation((chunk: unknown) => {
+      chunks.push(String(chunk));
+      return true;
+    });
+    try {
+      await uninstallAction(
+        { project: dir, keepLocks: true, print },
+        fakeCommand(join(dir, "state")),
+      );
+    } finally {
+      spy.mockRestore();
+    }
+    return chunks.join("");
+  }
+
+  it("tells the user the CLI is still installed and how to remove it", async () => {
+    const out = await runAndCapture(false);
+    expect(out).toContain("npm rm -g mic-lock");
+    expect(out).toMatch(/still on your PATH/i);
+    expect(out).toMatch(/symlink you created by hand/i);
+  });
+
+  it("stays quiet about CLI removal on --print (dry run)", async () => {
+    const out = await runAndCapture(true);
+    expect(out).not.toContain("npm rm -g mic-lock");
   });
 });

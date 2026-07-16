@@ -157,7 +157,7 @@ teammates and other machines the same enforcement (each machine still needs
 `npm i -g mic-lock`). Hooks load at session start, so restart agent sessions
 after running it.
 
-**Turning it back off** — `mic-lock uninstall` fully reverses `setup`: it removes
+**Turning it back off** — `mic-lock uninstall` reverses `setup`: it removes
 the skill, the `PreToolUse` hook and the `CLAUDE.md` rule (so agents no longer see
 *or* enforce it) and purges the lock state at `~/.mic-lock`. It mirrors `setup`'s
 scope flags, preserves any unrelated settings/hooks, and is idempotent.
@@ -173,6 +173,11 @@ The purge is skipped (with a warning) if another agent is currently holding or
 waiting on a lock — pass `--force` to override. Re-enable anytime with
 `mic-lock setup`.
 
+> `uninstall` only undoes `setup` — the `mic-lock` CLI itself stays on your PATH.
+> To remove it too, run `npm rm -g mic-lock` (or `npm unlink` in this repo if you
+> installed with `npm link`). A symlink you created by hand isn't tracked, so
+> delete it yourself.
+
 See [skills/mic-lock/SKILL.md](skills/mic-lock/SKILL.md). All commands support
 `--json` for parsing.
 
@@ -183,7 +188,7 @@ See [skills/mic-lock/SKILL.md](skills/mic-lock/SKILL.md). All commands support
 | Command | What it does |
 |---|---|
 | `setup [--user\|--project [dir]] [--print]` | Install & forget: skill + enforcement hook + naming rule |
-| `uninstall [--user\|--project [dir]] [--print] [--keep-locks] [--force]` | Reverse `setup`: remove skill + hook + rule, purge lock state (aliases: `disable`, `remove`, `teardown`) |
+| `uninstall [--user\|--project [dir]] [--print] [--keep-locks] [--force]` | Reverse `setup`: remove skill + hook + rule, purge lock state (leaves the CLI on PATH; aliases: `disable`, `remove`, `teardown`) |
 | `guard` | PreToolUse hook (used by `setup`); blocks unwrapped device commands |
 | `acquire <res> [--wait] [--timeout <ms>] [--until-approved] [--ttl <s>]` | Take a lock; joins the FIFO queue when busy |
 | `release <res> [--token <fence>] [--force] [--reason <t>]` | Release yours, or force-release (steal) someone's |
