@@ -26,14 +26,23 @@ home folder.
 ## Install
 
 ```bash
-git clone <this repo> mic-lock && cd mic-lock
+npm install -g mic-lock     # puts `mic-lock` (and the `mlk` alias) on your PATH
+```
+
+Requires Node ≥ 18 (developed on Node 26, macOS). Android discovery uses `adb`;
+iOS discovery uses `xcrun simctl` — both optional, the lock core needs neither.
+
+<details>
+<summary><strong>From source</strong> (for development, or to hack on mic-lock)</summary>
+
+```bash
+git clone https://github.com/Michael23Magdy/mic-lock.git && cd mic-lock
 npm install
 npm run build
 npm link          # puts `mic-lock` (and `mlk`) on your PATH
 ```
 
-Requires Node ≥ 18 (developed on Node 26, macOS). Android discovery uses `adb`;
-iOS discovery uses `xcrun simctl` — both optional, the lock core needs neither.
+</details>
 
 ---
 
@@ -157,7 +166,7 @@ never ran mic-lock setup: their unwrapped device commands are blocked until
 wrapped in `mic-lock`. Prefer **`--project`** (recommended): it writes the repo's
 `.claude/` so enforcement stays scoped to just that repo, and committing it gives
 teammates and other machines the same enforcement (each machine still needs
-mic-lock installed from source — see [Install](#install)). Hooks load at session
+mic-lock installed — see [Install](#install)). Hooks load at session
 start, so restart agent sessions after running it.
 
 **Turning it back off** — `mic-lock uninstall` reverses `setup`: it removes
@@ -306,8 +315,18 @@ npm run test:stress   # multi-process contention + crash-recovery tests
 npm run typecheck
 ```
 
-The engine is also usable as a library — `import { LockEngine } from "mic-lock"`
-— with injectable clock and liveness for testing.
+### Use as a library
+
+The engine is also usable programmatically (ships with TypeScript types),
+with an injectable clock and liveness for testing:
+
+```bash
+npm install mic-lock
+```
+
+```ts
+import { LockEngine } from "mic-lock";
+```
 
 ## License
 
