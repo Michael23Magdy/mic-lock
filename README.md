@@ -1,18 +1,13 @@
 <div align="center">
 
-<img src="assets/icon.png" alt="mic-lock" width="132" height="132">
-
-# mic-lock
+<img src="assets/logo.png" alt="mic-lock — a local, serverless device lock for parallel AI coding agents" width="720">
 
 <a href="https://www.npmjs.com/package/mic-lock"><img alt="npm version" src="https://img.shields.io/npm/v/mic-lock?color=2dd4bf&labelColor=0b1220&label=version"></a>
 <a href="https://www.npmjs.com/package/mic-lock"><img alt="node" src="https://img.shields.io/node/v/mic-lock?color=818cf8&labelColor=0b1220"></a>
 <a href="LICENSE"><img alt="license" src="https://img.shields.io/npm/l/mic-lock?color=818cf8&labelColor=0b1220"></a>
 
-### Many agents. One emulator. No collisions.
-
-A **local, serverless device lock** for parallel AI coding agents — so the several
-Claude sessions on your laptop stop clobbering each other's emulator. Install once,
-and forget it's there.
+Several Claude agents on one laptop will grab the same emulator and clobber each
+other's build. **Install once — and forget it's there.**
 
 <p><code>npm install -g mic-lock</code></p>
 
