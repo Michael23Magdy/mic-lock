@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/logo.png" alt="mic-lock — a local, serverless device lock for parallel AI coding agents" width="720">
+<h1 id="mic-lock"><img src="assets/logo.png" alt="mic-lock" width="720"></h1>
 
 <a href="https://www.npmjs.com/package/mic-lock"><img alt="npm version" src="https://img.shields.io/npm/v/mic-lock?color=2dd4bf&labelColor=0b1220&label=version"></a>
 <a href="https://www.npmjs.com/package/mic-lock"><img alt="node" src="https://img.shields.io/node/v/mic-lock?color=818cf8&labelColor=0b1220"></a>
