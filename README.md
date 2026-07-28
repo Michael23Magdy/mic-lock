@@ -1,75 +1,88 @@
-# mic-lock
+<div align="center">
 
-**A local, serverless lock for the handful of test devices a machine can run — built for many AI coding agents sharing one laptop's emulators, simulators, and phones.**
+<h1 id="mic-lock"><img src="assets/logo.png" alt="mic-lock" width="720"></h1>
 
-You have several agents working different tickets in different git worktrees on
-one machine. They all want to test on the *same* emulator/simulator/device (the
-machine can only run a couple at a time), and they clobber each other's installs
-and test state. mic-lock makes each device a **fair, first-come lock**: an agent
-that starts using a device acquires it; anyone else **sees it's busy, waits in a
-FIFO queue, and is notified the instant it frees**. Optionally, a device can be
-**held until a human tests and approves** it before the next agent gets in.
+<a href="https://www.npmjs.com/package/mic-lock"><img alt="npm version" src="https://img.shields.io/npm/v/mic-lock?color=2dd4bf&labelColor=0b1220&label=version"></a>
+<a href="https://www.npmjs.com/package/mic-lock"><img alt="node" src="https://img.shields.io/node/v/mic-lock?color=818cf8&labelColor=0b1220"></a>
+<a href="LICENSE"><img alt="license" src="https://img.shields.io/npm/l/mic-lock?color=818cf8&labelColor=0b1220"></a>
 
-No server, no daemon, no Redis. Just a CLI and a shared state directory in your
-home folder.
+Several Claude agents on one laptop will grab the same emulator and clobber each
+other's build. **Install once — and forget it's there.**
 
-> **Why it exists:** tools that offer a *fair queue + notify-on-free* (Jenkins
-> Lockable Resources, Redisson Fair Lock) need a server. Local CLIs (`flock`,
-> `waitlock`, `run-one`, `py-filelock`) are plain mutexes — no fairness, no
-> notify, no human-hold. Agent worktree managers (Claude Squad, Uzi, Conductor)
-> isolate *files* and explicitly don't arbitrate shared hardware. mic-lock is
-> the combination that didn't exist: **local + serverless + fair FIFO + notify +
-> hold-for-approval + agent-friendly.** See [COMPETITORS.md](COMPETITORS.md).
+<p><code>npm install -g mic-lock</code></p>
+
+<sub><a href="#problem">The problem</a> · <a href="#install">Install &amp; forget</a> · <a href="#docs">Technical docs ↓</a></sub>
+
+</div>
+
+<a id="problem"></a>
+
+## The problem
+
+Claude can now build, install, and drive your app on real emulators and devices —
+so you don't run one agent at a time anymore. You run **several in parallel**, each
+in its own git worktree, all on one machine.
+
+But a laptop only runs a couple of emulators. So two agents reach for the same one:
+Agent A installs its build and starts testing — then Agent B installs **its** build
+on top, mid-test. Agent A's changes vanish, it starts debugging a regression that
+doesn't exist, and it sees taps it never made. Both runs are corrupted. Neither
+agent did anything wrong — **they just can't see each other.**
+
+<div align="center">
+<img src="assets/collision.gif" alt="Two agents install onto the same emulator; the second overwrites the first, which is left chasing phantom taps." width="820">
+</div>
+
+<a id="install"></a>
+
+## Install and forget
+
+mic-lock makes each device a **fair, first-come lock** an agent must hold before it
+installs or tests. You run **one command, once** — after that, your agents
+coordinate themselves. No server, no daemon, no Redis; just a CLI and a shared
+folder in your home directory.
+
+```bash
+npm install -g mic-lock
+mic-lock setup            # wires it into your Claude Code agents
+```
+
+Restart your agent sessions, and you're done. From then on:
+
+- 🚦 **Fair queue, no starvation.** Busy? The next agent waits in a first-come line instead of clobbering — and is served the instant the device frees.
+- ⚡ **Instant handoff.** A freed device is picked up right away (notify-on-free), so agents never idle-poll or trample a running test.
+- 🛡️ **Crash-safe.** If an agent dies mid-test, its lease expires and the next agent reclaims the device — no wedged, stuck-locked emulators.
+- 🙋 **Hold for a human.** An agent can park a build on a device *until you test it and approve* — a built-in QA gate between agents.
+- 📦 **Zero infrastructure.** Pure atomic filesystem operations. Works offline, nothing to deploy or babysit.
+
+Enforcement is **deterministic**, not a polite request: a `PreToolUse` hook blocks
+any un-coordinated device command and tells the agent how to fix itself, so
+coordination doesn't depend on the model remembering. *(This combination — local +
+serverless + fair FIFO + notify + hold-for-approval — [didn't exist before](COMPETITORS.md).)*
+
+<a id="docs"></a>
 
 ---
 
-## Install
+## 📖 Keep reading: the technical details
 
-```bash
-npm install -g mic-lock     # puts `mic-lock` (and the `mlk` alias) on your PATH
-```
-
-Requires Node ≥ 18 (developed on Node 26, macOS). Android discovery uses `adb`;
-iOS discovery uses `xcrun simctl` — both optional, the lock core needs neither.
-
-<details>
-<summary><strong>From source</strong> (for development, or to hack on mic-lock)</summary>
-
-```bash
-git clone https://github.com/Michael23Magdy/mic-lock.git && cd mic-lock
-npm install
-npm run build
-npm link          # puts `mic-lock` (and `mlk`) on your PATH
-```
-
-</details>
+Everything above is all most setups need. Below is the full reference — using it by
+hand, every command, exit codes, and how the lock stays correct without a server.
 
 ---
 
-## Quick start
+## Using it directly
+
+You rarely need to — the agents do this for you — but mic-lock is a normal CLI you
+can drive yourself. First, find a device id every agent will agree on (use the
+`adb` serial / simulator UDID so everyone converges on the same lock):
 
 ```bash
-# 0. Find a device id every agent will agree on (adb serial / simulator UDID)
 mic-lock discover
-
-# 1. Take it (waits its turn if busy), labelled so `status` is legible
-mic-lock acquire emulator-5554 --owner "checkout-flow test" --wait
-
-# 2. Work — install, launch, test — for as long as you hold it
-adb -s emulator-5554 install -r app.apk
-./gradlew connectedAndroidTest
-
-# 3. See who holds what and who's waiting
-mic-lock status
-
-# 4. Give it back
-mic-lock release emulator-5554
 ```
 
-The resource name (`emulator-5554`) is just a stable string every agent agrees
-on for that device — use the `adb` serial or simulator UDID from `mic-lock
-discover` so everyone converges on the same lock. Unknown names are auto-created
-as a simple 1-slot mutex on first use.
+The resource name (e.g. `emulator-5554`) is just a stable string; unknown names are
+auto-created as a simple 1-slot mutex on first use.
 
 ### The three ways to hold a device
 
@@ -83,12 +96,11 @@ mic-lock release emulator-5554
 ```
 
 A manual `acquire` is **sticky** — held until you explicitly `release` it, so it
-survives across separate commands, which is exactly what a multi-step device
-task needs. When `setup`'s enforcement hook is installed, **holding the lock
-also lets your `adb`/`gradlew`/`xcodebuild` commands through** until you release.
-Nothing renews a sticky hold, so a crash won't free it automatically — release
-promptly, and recover an abandoned hold with `mic-lock status` + `mic-lock
-release <device> --force`.
+survives across separate commands, which is exactly what a multi-step device task
+needs. When `setup`'s enforcement hook is installed, **holding the lock also lets
+your `adb`/`gradlew`/`xcodebuild` commands through** until you release. Nothing
+renews a sticky hold, so a crash won't free it automatically — release promptly, and
+recover an abandoned hold with `mic-lock status` + `mic-lock release <device> --force`.
 
 **2. Wrap a single command (crash-safe, auto-releases):**
 
@@ -97,10 +109,10 @@ mic-lock with emulator-5554 --owner "smoke test" -- \
   bash -c 'adb -s "$MIC_LOCK_DEVICE_ID" install -r app.apk && ./gradlew connectedCheck'
 ```
 
-Acquires (waiting in line if busy), heartbeats the lease while your command
-runs, and releases on exit — even on crash or Ctrl-C. The locked device id is in
+Acquires (waiting in line if busy), heartbeats the lease while your command runs, and
+releases on exit — even on crash or Ctrl-C. The locked device id is in
 `$MIC_LOCK_DEVICE_ID`. Best for one self-contained step; use #1 when you'll issue
-separate commands.
+separate commands. **Automated runs should use `with`.**
 
 **3. Hold until a human approves:**
 
@@ -109,15 +121,14 @@ mic-lock acquire emulator-5554 --until-approved   # deploy your build, then tell
 #   "Ready on emulator-5554 — test it, then run:  mic-lock approve emulator-5554"
 ```
 
-An `--until-approved` lock never auto-releases and survives your process exiting
-(and even a reboot). Only `mic-lock approve emulator-5554` (or `release --force`)
-frees it — so a human can manually verify the device before the next agent takes
-it.
+An `--until-approved` lock never auto-releases and survives your process exiting (and
+even a reboot). Only `mic-lock approve emulator-5554` (or `release --force`) frees it
+— so a human can manually verify the device before the next agent takes it.
 
 ### Pools and semaphores
 
-If a machine can run *N* interchangeable emulators, register a **pool** and let
-agents grab any free one:
+If a machine can run *N* interchangeable emulators, register a **pool** and let agents
+grab any free one:
 
 ```bash
 mic-lock config register emulators --kind pool --device-ids emulator-5554 emulator-5556
@@ -130,12 +141,22 @@ Or a plain N-slot **semaphore** when the slots are anonymous:
 mic-lock acquire ci-slot --capacity 2 --wait
 ```
 
----
+## Setup & enforcement (deep dive)
 
-## For AI coding agents — install & forget
+`mic-lock setup` installs three things (idempotently):
 
-One command wires everything up so parallel agents coordinate **without you
-doing anything per-run**:
+1. **The Claude Code skill** — teaches agents to take a device once and hold it for
+   the whole task (`acquire` → work → `release`), wrap one-off commands in `mic-lock
+   with …`, label the hold with `--owner`, honor exit codes, and use `--until-approved`
+   + `approve` when you want to test by hand.
+2. **A PreToolUse hook (`mic-lock guard`)** — *enforcement*. It **blocks** any Bash
+   command that touches a shared device (`adb install/shell/push`, `emulator` boot,
+   `xcrun simctl`, `gradlew connected*`, `xcodebuild test`, `flutter`/`react-native`/`expo
+   run`) **unless the agent's worktree already holds a device lock** or it's wrapped in
+   `mic-lock`, and tells the agent how to fix it. Read-only checks (`adb devices`,
+   `simctl list`) are allowed. This does not depend on the model choosing to comply.
+3. **A `CLAUDE.md` rule** fixing the naming convention (lock by adb serial / simulator
+   UDID) so every agent converges on the same lock name.
 
 ```bash
 mic-lock setup                # this machine, all projects  (writes ~/.claude/)
@@ -143,36 +164,21 @@ mic-lock setup --project      # this repo (committable, travels to teammates)
 mic-lock setup --print        # dry run — show what it would change
 ```
 
-`setup` installs three things (idempotently):
-
-1. **The Claude Code skill** — teaches agents to take a device once and hold it
-   for the whole task (`acquire` → work → `release`), wrap one-off commands in
-   `mic-lock with …`, label the hold with `--owner`, honor exit codes, and use
-   `--until-approved` + `approve` when you want to test by hand.
-2. **A PreToolUse hook (`mic-lock guard`)** — *enforcement*. It **blocks** any
-   Bash command that touches a shared device (`adb install/shell/push`,
-   `emulator` boot, `xcrun simctl`, `gradlew connected*`, `xcodebuild test`,
-   `flutter`/`react-native`/`expo run`) **unless the agent's worktree already
-   holds a device lock** (so a held session runs freely) or it's wrapped in
-   `mic-lock`, and tells the agent how to fix it. Read-only checks (`adb
-   devices`, `simctl list`) are allowed. This is deterministic — it does not
-   depend on the model choosing to comply.
-3. **A `CLAUDE.md` rule** fixing the naming convention (lock by adb serial /
-   simulator UDID) so every agent converges on the same lock name.
-
 Scope — pick deliberately. **`--user`** (`~/.claude/`) is the CLI default, but it
-enforces the guard on **every project on this machine**, including repos that
-never ran mic-lock setup: their unwrapped device commands are blocked until
-wrapped in `mic-lock`. Prefer **`--project`** (recommended): it writes the repo's
-`.claude/` so enforcement stays scoped to just that repo, and committing it gives
-teammates and other machines the same enforcement (each machine still needs
-mic-lock installed — see [Install](#install)). Hooks load at session
+enforces the guard on **every project on this machine**, including repos that never ran
+mic-lock setup: their unwrapped device commands are blocked until wrapped in `mic-lock`.
+Prefer **`--project`** (recommended): it writes the repo's `.claude/` so enforcement
+stays scoped to just that repo, and committing it gives teammates and other machines the
+same enforcement (each machine still needs mic-lock installed). Hooks load at session
 start, so restart agent sessions after running it.
 
-**Turning it back off** — `mic-lock uninstall` reverses `setup`: it removes
-the skill, the `PreToolUse` hook and the `CLAUDE.md` rule (so agents no longer see
-*or* enforce it) and purges the lock state at `~/.mic-lock`. It mirrors `setup`'s
-scope flags, preserves any unrelated settings/hooks, and is idempotent.
+> `MIC_LOCK_ENFORCE=scoped` downgrades a would-be block to *allow* unless the project
+> opted in via `setup --project` — letting the guard be installed machine-wide but only
+> enforce in participating repos.
+
+**Turning it back off** — `mic-lock uninstall` reverses `setup`: it removes the skill,
+the `PreToolUse` hook and the `CLAUDE.md` rule, and purges the lock state at `~/.mic-lock`.
+It mirrors `setup`'s scope flags, preserves any unrelated settings/hooks, and is idempotent.
 
 ```bash
 mic-lock uninstall              # remove from ~/.claude/ + purge locks
@@ -181,26 +187,36 @@ mic-lock uninstall --print      # dry run — show what it would remove
 mic-lock uninstall --keep-locks # leave ~/.mic-lock intact
 ```
 
-The purge is skipped (with a warning) if another agent is currently holding or
-waiting on a lock — pass `--force` to override. Re-enable anytime with
-`mic-lock setup`.
+The purge is skipped (with a warning) if another agent is currently holding or waiting on
+a lock — pass `--force` to override. Re-enable anytime with `mic-lock setup`.
 
-> `uninstall` only undoes `setup` — the `mic-lock` CLI itself stays on your PATH.
-> To remove it too, run `npm rm -g mic-lock` (or `npm unlink` in this repo if you
-> installed with `npm link`). A symlink you created by hand isn't tracked, so
-> delete it yourself.
+> `uninstall` only undoes `setup` — the `mic-lock` CLI itself stays on your PATH. To
+> remove it too, run `npm rm -g mic-lock` (or `npm unlink` if you installed from source).
 
-See [skills/mic-lock/SKILL.md](skills/mic-lock/SKILL.md). All commands support
-`--json` for parsing.
+See [skills/mic-lock/SKILL.md](skills/mic-lock/SKILL.md). All commands support `--json`
+for parsing.
 
----
+<details>
+<summary><strong>Install from source</strong> (for development, or to hack on mic-lock)</summary>
+
+```bash
+git clone https://github.com/Michael23Magdy/mic-lock.git && cd mic-lock
+npm install
+npm run build
+npm link          # puts `mic-lock` (and `mlk`) on your PATH
+```
+
+Requires Node ≥ 18. Android discovery uses `adb`; iOS discovery uses `xcrun simctl` —
+both optional, the lock core needs neither.
+
+</details>
 
 ## Command reference
 
 | Command | What it does |
 |---|---|
 | `setup [--user\|--project [dir]] [--print]` | Install & forget: skill + enforcement hook + naming rule |
-| `uninstall [--user\|--project [dir]] [--print] [--keep-locks] [--force]` | Reverse `setup`: remove skill + hook + rule, purge lock state (leaves the CLI on PATH; aliases: `disable`, `remove`, `teardown`) |
+| `uninstall [--user\|--project [dir]] [--print] [--keep-locks] [--force]` | Reverse `setup`: remove skill + hook + rule, purge lock state (aliases: `disable`, `remove`, `teardown`) |
 | `guard` | PreToolUse hook (used by `setup`); blocks unwrapped device commands |
 | `acquire <res> [--wait] [--timeout <ms>] [--until-approved] [--ttl <s>]` | Take a lock; joins the FIFO queue when busy |
 | `release <res> [--token <fence>] [--force] [--reason <t>]` | Release yours, or force-release (steal) someone's |
@@ -215,8 +231,9 @@ See [skills/mic-lock/SKILL.md](skills/mic-lock/SKILL.md). All commands support
 | `gc [res]` | Reclaim stale locks, prune dead waiters, sweep tombstones |
 | `config register\|list\|set-defaults` | Register resources / view / set default tunables |
 
-Global flags (after the subcommand): `--json`, `--state-dir <path>`,
-`--no-notify`, `-q/--quiet`, `--verbose`. `--owner <label>` on `acquire`/`with`.
+Global flags (after the subcommand): `--json`, `--state-dir <path>`, `--no-notify`,
+`-q/--quiet`, `--verbose`. `--owner <label>` on `acquire`/`with`. The CLI is also
+available as the shorter alias `mlk`.
 
 ### Exit codes (for scripting/agents)
 
@@ -231,53 +248,47 @@ Global flags (after the subcommand): `--json`, `--state-dir <path>`,
 | `20` | could not take the coordination gate (contention/corruption) |
 | `1` | other error |
 
----
-
 ## How it works
 
 mic-lock is a **two-layer lock** over a shared state directory, using classic
 algorithms so it's correct without a server.
 
-**Layer 1 — the gate.** A per-resource mutex held for *microseconds*, built on
-an atomic create-only primitive (`mkdir`, atomic on APFS). Every state change
-runs inside it, so ticket draws, grants and stale-breaks are serialized and
-race-free. A gate held longer than a few seconds means a crashed process, so it
-is safely broken.
+**Layer 1 — the gate.** A per-resource mutex held for *microseconds*, built on an atomic
+create-only primitive (`mkdir`, atomic on APFS). Every state change runs inside it, so
+ticket draws, grants and stale-breaks are serialized and race-free. A gate held longer
+than a few seconds means a crashed process, so it is safely broken.
 
-**Layer 2 — the lease.** The holder record carries a monotonic **fence token**,
-a lease **TTL**, and a **heartbeat**. This governs who may actually use the
-device and how crashes are recovered.
+**Layer 2 — the lease.** The holder record carries a monotonic **fence token**, a lease
+**TTL**, and a **heartbeat**. This governs who may actually use the device and how crashes
+are recovered.
 
 The pieces, and the well-known algorithms behind them:
 
-- **Fairness — Lamport's Bakery algorithm.** Each waiter draws a monotonic
-  ticket; the lowest-numbered *live* waiter is served next. A crashed waiter
-  ahead of you is skipped, so no one starves. (A gate-free fast path lets only
-  the apparent head-of-line take the gate, so N waiters don't all serialize.)
+- **Fairness — Lamport's Bakery algorithm.** Each waiter draws a monotonic ticket; the
+  lowest-numbered *live* waiter is served next. A crashed waiter ahead of you is skipped,
+  so no one starves. (A gate-free fast path lets only the apparent head-of-line take the
+  gate, so N waiters don't all serialize.)
 - **Crash recovery — leases.** `with` (and `acquire --ttl`) take a lease that is
-  heartbeated in-process; if that process crashes, the lease expires and the
-  next waiter reclaims the device. A plain manual `acquire` is instead *sticky*
-  (no lease) and is freed only by an explicit `release`/`--force`, so it isn't
-  tied to a fragile notion of "the agent's process" — which is why automated
-  runs should use `with`. PID liveness uses `kill -0` plus the process start
-  time (defeats PID reuse) plus the boot session id (a leased holder from a
+  heartbeated in-process; if that process crashes, the lease expires and the next waiter
+  reclaims the device. A plain manual `acquire` is instead *sticky* (no lease) and is
+  freed only by an explicit `release`/`--force`. PID liveness uses `kill -0` plus the
+  process start time (defeats PID reuse) plus the boot session id (a leased holder from a
   previous boot is treated as dead).
-- **Zombie protection — fencing tokens (Kleppmann).** Every grant gets a
-  strictly higher fence token. A holder whose lock was stale-broken or stolen
-  fails its next renew/release as *superseded* and won't clobber the new holder.
-- **Notify-on-free.** Waiters wake via `fs.watch` (FSEvents) with a ~250 ms poll
-  backstop for coalesced events, so a freed device is picked up near-instantly.
-  Optional macOS desktop notifications + terminal bell announce your turn and
-  approval requests.
-- **Hold-for-approval.** An `until-approved` lock has no lease expiry and is
-  never auto-reclaimed — it survives process death and reboot, and only a human
-  `approve` (or `--force`) releases it.
+- **Zombie protection — fencing tokens (Kleppmann).** Every grant gets a strictly higher
+  fence token. A holder whose lock was stale-broken or stolen fails its next renew/release
+  as *superseded* and won't clobber the new holder.
+- **Notify-on-free.** Waiters wake via `fs.watch` (FSEvents) with a ~250 ms poll backstop
+  for coalesced events, so a freed device is picked up near-instantly. Optional macOS
+  desktop notifications + terminal bell announce your turn and approval requests.
+- **Hold-for-approval.** An `until-approved` lock has no lease expiry and is never
+  auto-reclaimed — it survives process death and reboot, and only a human `approve` (or
+  `--force`) releases it.
 
-**Safety is structural.** Capacity equals the number of slot files, and a lock
-is only ever written into a free slot under the gate — so "≤ capacity holders,
-never a double-acquire" does not depend on the bakery being bug-free. This is
-exactly what the stress tests assert: 10 contending processes, zero double
-acquisitions, capacity always respected, and a SIGKILLed holder reclaimed.
+**Safety is structural.** Capacity equals the number of slot files, and a lock is only
+ever written into a free slot under the gate — so "≤ capacity holders, never a
+double-acquire" does not depend on the bakery being bug-free. This is exactly what the
+stress tests assert: 10 contending processes, zero double acquisitions, capacity always
+respected, and a SIGKILLed holder reclaimed.
 
 ### State layout (`~/.mic-lock/`, override with `--state-dir`)
 
@@ -295,16 +306,14 @@ resources/<encoded-name>/
 
 ### Tuning
 
-Defaults (ms): lease `ttl=12000`, `heartbeat=2000`, `grace=5000`. A healthy
-holder renews ~6× per lease, so it must miss several heartbeats before another
-agent reclaims it. Override globally or per-resource:
+Defaults (ms): lease `ttl=12000`, `heartbeat=2000`, `grace=5000`. A healthy holder renews
+~6× per lease, so it must miss several heartbeats before another agent reclaims it.
+Override globally or per-resource:
 
 ```bash
 mic-lock config set-defaults --ttl 20 --heartbeat 3 --grace 8      # seconds
 mic-lock config register pixel7 --ttl 30                            # per resource
 ```
-
----
 
 ## Development
 
@@ -317,8 +326,8 @@ npm run typecheck
 
 ### Use as a library
 
-The engine is also usable programmatically (ships with TypeScript types),
-with an injectable clock and liveness for testing:
+The engine is also usable programmatically (ships with TypeScript types), with an
+injectable clock and liveness for testing:
 
 ```bash
 npm install mic-lock
