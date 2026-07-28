@@ -5,7 +5,7 @@
       <stop offset="0" stop-color="#2dd4bf"/>
       <stop offset="1" stop-color="#818cf8"/>
     </linearGradient>
-    <linearGradient id="key" x1="230" y1="300" x2="282" y2="404" gradientUnits="userSpaceOnUse">
+    <linearGradient id="key" x1="230" y1="262" x2="282" y2="366" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#2dd4bf"/>
       <stop offset="1" stop-color="#6366f1"/>
     </linearGradient>
@@ -15,15 +15,15 @@
   <rect x="0" y="0" width="512" height="512" rx="116" fill="url(#tile)"/>
 
   <!-- padlock shackle -->
-  <path d="M186 232 L186 196 A70 70 0 0 1 326 196 L326 232" stroke="#ffffff" stroke-width="34" stroke-linecap="round" fill="none"/>
+  <path d="M186 194 L186 158 A70 70 0 0 1 326 158 L326 194" stroke="#ffffff" stroke-width="34" stroke-linecap="round" fill="none"/>
 
   <!-- padlock body = phone -->
-  <rect x="150" y="228" width="212" height="250" rx="42" fill="#ffffff"/>
+  <rect x="150" y="190" width="212" height="250" rx="42" fill="#ffffff"/>
   <!-- screen bezel -->
-  <rect x="171" y="250" width="170" height="206" rx="28" fill="none" stroke="#e2e8f0" stroke-width="3"/>
+  <rect x="171" y="212" width="170" height="206" rx="28" fill="none" stroke="#e2e8f0" stroke-width="3"/>
   <!-- keyhole (locked screen) -->
-  <circle cx="256" cy="332" r="27" fill="url(#key)"/>
-  <path d="M256 338 L236 400 L276 400 Z" fill="url(#key)"/>
+  <circle cx="256" cy="294" r="27" fill="url(#key)"/>
+  <path d="M256 300 L236 362 L276 362 Z" fill="url(#key)"/>
   <!-- home indicator -->
-  <rect x="226" y="430" width="60" height="10" rx="5" fill="#cbd5e1"/>
+  <rect x="226" y="392" width="60" height="10" rx="5" fill="#cbd5e1"/>
 </svg>
