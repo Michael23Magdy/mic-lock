@@ -1,0 +1,34 @@
+<svg width="1280" height="640" viewBox="0 0 1280 640" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="mic-lock — many agents, one emulator, no collisions">
+  <title>mic-lock</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1280" y2="640" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0b1220"/>
+      <stop offset="1" stop-color="#141e33"/>
+    </linearGradient>
+    <linearGradient id="tile" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2dd4bf"/>
+      <stop offset="1" stop-color="#818cf8"/>
+    </linearGradient>
+    <linearGradient id="key" x1="230" y1="300" x2="282" y2="404" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2dd4bf"/>
+      <stop offset="1" stop-color="#6366f1"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="640" fill="url(#bg)"/>
+
+  <!-- icon (scaled from 512 -> 200), centered near top -->
+  <g transform="translate(540,96) scale(0.390625)">
+    <rect x="0" y="0" width="512" height="512" rx="116" fill="url(#tile)"/>
+    <path d="M186 232 L186 196 A70 70 0 0 1 326 196 L326 232" stroke="#ffffff" stroke-width="34" stroke-linecap="round" fill="none"/>
+    <rect x="150" y="228" width="212" height="250" rx="42" fill="#ffffff"/>
+    <rect x="171" y="250" width="170" height="206" rx="28" fill="none" stroke="#e2e8f0" stroke-width="3"/>
+    <circle cx="256" cy="332" r="27" fill="url(#key)"/>
+    <path d="M256 338 L236 400 L276 400 Z" fill="url(#key)"/>
+    <rect x="226" y="430" width="60" height="10" rx="5" fill="#cbd5e1"/>
+  </g>
+
+  <text x="640" y="410" text-anchor="middle" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif" font-size="92" font-weight="700" fill="#e8edf6">mic-lock</text>
+  <text x="640" y="470" text-anchor="middle" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif" font-size="30" font-weight="500" fill="#5eead4">Many agents. One emulator. No collisions.</text>
+  <text x="640" y="522" text-anchor="middle" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif" font-size="22" fill="#93a1b8">a local, serverless device lock for parallel AI coding agents</text>
+</svg>

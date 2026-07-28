@@ -1,0 +1,61 @@
+<svg width="1280" height="720" viewBox="0 0 1280 720" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Two Claude agents collide on one emulator: Agent B installs its build over Agent A mid-test, leaving Agent A confused by phantom taps.">
+  <title>Two agents, one emulator — a collision</title>
+
+  <!-- stage -->
+  <rect x="16" y="16" width="1248" height="688" rx="28" fill="#0b1220" stroke="#263248" stroke-width="1.5"/>
+
+  <!-- context pill -->
+  <rect x="470" y="34" width="340" height="34" rx="17" fill="#131c2e" stroke="#26324a"/>
+  <text x="640" y="56" text-anchor="middle" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif" font-size="13" fill="#93a1b8">one laptop · one emulator · two agents</text>
+
+  <!-- connector: A was testing (rose, broken) -->
+  <path d="M360 288 Q 500 320 600 405" fill="none" stroke="#fb7185" stroke-width="3" stroke-dasharray="6 9" opacity=".9"/>
+  <path d="M590 395 L610 415 M610 395 L590 415" stroke="#fb7185" stroke-width="4" stroke-linecap="round"/>
+  <text x="452" y="334" text-anchor="middle" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif" font-size="15" fill="#fda4af">was testing build A</text>
+
+  <!-- connector: B installs (indigo, delivered) -->
+  <path d="M920 288 Q 780 320 680 405" fill="none" stroke="#818cf8" stroke-width="3"/>
+  <circle cx="680" cy="405" r="7" fill="#818cf8"/>
+  <text x="812" y="334" text-anchor="middle" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif" font-size="15" fill="#c7d2fe">installs build B</text>
+
+  <!-- phone -->
+  <rect x="560" y="360" width="160" height="310" rx="30" fill="#0e1626" stroke="#2a3852" stroke-width="3"/>
+  <rect x="578" y="392" width="124" height="246" rx="10" fill="#161a3c"/>
+  <rect x="592" y="408" width="96" height="14" rx="4" fill="#818cf8" opacity=".85"/>
+  <text x="640" y="540" text-anchor="middle" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif" font-size="96" font-weight="700" fill="#a5b4fc" opacity=".92">B</text>
+  <text x="640" y="602" text-anchor="middle" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif" font-size="14" fill="#c7d2fe">B's build · running</text>
+  <rect x="616" y="400" width="48" height="8" rx="4" fill="#0b0f26"/>
+  <rect x="610" y="620" width="60" height="5" rx="2.5" fill="#3a3f66"/>
+  <text x="640" y="690" text-anchor="middle" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif" font-size="13" fill="#93a1b8">emulator-5554</text>
+
+  <!-- phantom taps (static ripples) -->
+  <circle cx="632" cy="474" r="22" fill="none" stroke="#fb7185" stroke-width="3" opacity=".3"/>
+  <circle cx="666" cy="520" r="15" fill="none" stroke="#fb7185" stroke-width="3" opacity=".6"/>
+  <circle cx="618" cy="560" r="9" fill="none" stroke="#fb7185" stroke-width="3" opacity=".9"/>
+
+  <!-- agent A card (alarmed) -->
+  <rect x="110" y="150" width="270" height="150" rx="20" fill="#131c2e" stroke="#26324a"/>
+  <rect x="110" y="150" width="270" height="150" rx="20" fill="none" stroke="#fb7185" stroke-width="2"/>
+  <circle cx="185" cy="225" r="43" fill="none" stroke="#fb7185" stroke-width="2.5" opacity=".7"/>
+  <circle cx="185" cy="225" r="34" fill="#0e1626" stroke="#2dd4bf" stroke-width="2"/>
+  <path d="M185 205 V245 M167 215 L203 235 M203 215 L167 235" stroke="#2dd4bf" stroke-width="3" stroke-linecap="round"/>
+  <text x="235" y="212" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif" font-size="21" font-weight="600" fill="#e8edf6">Agent A</text>
+  <text x="235" y="240" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif" font-size="14" fill="#93a1b8">feature: checkout</text>
+  <rect x="235" y="260" width="132" height="26" rx="13" fill="#2a1520" stroke="#fb7185"/>
+  <circle cx="251" cy="273" r="5" fill="#fb7185"/>
+  <text x="265" y="278" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif" font-size="13" fill="#fda4af">my changes… gone?</text>
+  <!-- ? bubble -->
+  <circle cx="372" cy="146" r="26" fill="#2a1520" stroke="#fb7185" stroke-width="2"/>
+  <text x="372" y="156" text-anchor="middle" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif" font-size="30" font-weight="700" fill="#fb7185">?</text>
+
+  <!-- agent B card (just installed) -->
+  <rect x="900" y="150" width="270" height="150" rx="20" fill="#131c2e" stroke="#26324a"/>
+  <circle cx="975" cy="225" r="43" fill="none" stroke="#818cf8" stroke-width="2.5" opacity=".7"/>
+  <circle cx="975" cy="225" r="34" fill="#0e1626" stroke="#818cf8" stroke-width="2"/>
+  <path d="M975 205 V245 M957 215 L993 235 M993 215 L957 235" stroke="#818cf8" stroke-width="3" stroke-linecap="round"/>
+  <text x="1025" y="212" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif" font-size="21" font-weight="600" fill="#e8edf6">Agent B</text>
+  <text x="1025" y="240" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif" font-size="14" fill="#93a1b8">feature: login</text>
+  <rect x="1025" y="260" width="132" height="26" rx="13" fill="#161a3c" stroke="#818cf8"/>
+  <circle cx="1041" cy="273" r="5" fill="#818cf8"/>
+  <text x="1055" y="278" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif" font-size="13" fill="#c7d2fe">just installed</text>
+</svg>
